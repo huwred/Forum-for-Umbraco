@@ -1,0 +1,116 @@
+@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using ContentModels = Umbraco.Web.PublishedModels;
+@using ClientDependency.Core.Mvc;
+@using Forums
+
+@*
+    render the editor so people can create and comment on something
+    this version uses TinyMCE,
+*@
+
+@{
+    Html.EnableClientValidation();
+    Html.EnableUnobtrusiveJavaScript();
+}
+
+@{
+    if (UserCanPostHere(Model))
+    {
+        var showTitle = (bool)ViewData["showTitle"];
+
+        var edit = false;
+        if (ViewData["edit"] != null)
+        {
+            edit = (bool)ViewData["edit"];
+        }
+
+        var mode = edit ? "Edit Post" : (showTitle ? "Create a new Post" : "Reply");
+        var label = edit ? "Message" : (showTitle ? "Message" : "Reply");
+        var btn = edit ? "Save" : (showTitle ? "Submit" : "Save");
+
+        var Reply = new ForumsPostModel();
+
+        if (edit)
+        {
+            if (Members.GetCurrentMemberId() != ((ContentModels.ForumPost)Model).PostAuthor.Id)
+            {
+                <h3>You can't edit this post, it's not yours</h3>
+                return;
+            }
+
+            Reply.Id = Model.Id;
+            Reply.Body = Model.Value<string>("postBody", "");
+            Reply.Title = Model.Value<string>("postTitle", "");
+        }
+
+        Reply.AuthorId = Members.GetCurrentMemberId();
+        Reply.ParentId = Model.Id;
+
+        using (Html.BeginUmbracoForm<ForumsSurfaceController>("PostReply", null, new { @class = "form-horizontal forum-reply-form" }))
+        {
+            <fieldset>
+
+                @Html.ValidationSummary("Reply", true)
+
+                @if (showTitle)
+                {
+                    <legend>@mode</legend>
+                        <div class="form-group">
+                            @Html.LabelFor(m => Reply.Title, new { @class = "control-label col-1" })
+                            <div class="col-11">
+                                @Html.TextBoxFor(m => Reply.Title, new { @class = "form-control" })
+                                @Html.ValidationMessageFor(m => Reply.Title)
+                            </div>
+                        </div>
+
+                }
+
+
+                <div class="form-group">
+                    @Html.LabelFor(m => Reply.Body, label, new { @class = "control-lable col-sm-1" })
+                    <div class="col-11">
+                        @Html.TextAreaFor(m => Reply.Body, 10, 20, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => Reply.Body)
+                    </div>
+                </div>
+
+                @Html.HiddenFor(m => Reply.Id)
+                @Html.HiddenFor(m => Reply.ParentId)
+                @Html.HiddenFor(m => Reply.AuthorId)
+
+                <div class="col-11">
+                    <input type="submit" class="btn btn-primary btn-lg" value="@btn" />
+                </div>
+            </fieldset>
+        }
+    }
+}
+
+@functions {
+
+    public bool UserCanPostHere(IPublishedContent item)
+    {
+        if (!Members.IsLoggedIn())
+            return false;
+
+        var canPostGroups = item.Value<string>("canPostGroups");
+
+        // default is any one logged on...
+        if (string.IsNullOrWhiteSpace(canPostGroups))
+            return true;
+
+        // is the user in any of those groups ?
+        var allowedGroupList = new List<string>();
+        foreach (var memberGroupStr in canPostGroups.Split(','))
+        {
+            var memberGroup = Services.MemberGroupService.GetById(Convert.ToInt32(memberGroupStr));
+            if (memberGroup != null)
+            {
+                allowedGroupList.Add(memberGroup.Name);
+            }
+        }
+        return Members.IsMemberAuthorized(allowGroups: allowedGroupList);
+    }
+
+}
+

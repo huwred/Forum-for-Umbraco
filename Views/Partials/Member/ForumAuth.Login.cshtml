@@ -1,0 +1,60 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<ForumLoginViewModel>
+@using Forums
+@using Umbraco.Web.Mvc
+
+@{
+    Html.EnableClientValidation(true);
+    Html.EnableUnobtrusiveJavaScript(true);
+}
+
+@if( !ViewData.ModelState.IsValid)
+{
+    var forgotPrompt = Umbraco.GetDictionaryValue("MemberAuth.Login.ForgotPassword");
+    
+    if ( string.IsNullOrWhiteSpace(forgotPrompt))
+    { 
+        <h3>Forgotten your password?</h3>
+        <p>
+            <a href="@ForumAuthConstants.ResetUrl">Reset it here</a>
+        </p>
+    }
+    else 
+    {
+        @Html.Raw(forgotPrompt)
+    }
+
+    @Html.ValidationSummary(ForumAuthConstants.LoginKey, true)
+}
+
+
+@using (Html.BeginUmbracoForm<ForumAuthSurfaceController>("HandleLogin", null, new { @class = "form-horizontal forum-reply-form" }))
+{
+    @Html.AntiForgeryToken()
+
+    <fieldset>
+        <legend>Login</legend>
+
+        <div class="form-group">
+            @Html.LabelFor(m => Model.EmailAddress, new { @class = "control-label col-sm-3" })
+            <div class="col-sm-9">
+                @Html.TextBoxFor(m => Model.EmailAddress, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => Model.EmailAddress)
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => Model.Password, new { @class = "control-label col-sm-3"})
+            <div class="col-sm-9">
+                @Html.PasswordFor(m => Model.Password, new { @class= "form-control"})
+                @Html.ValidationMessageFor(m => Model.Password)
+            </div>
+        </div>
+
+        @Html.HiddenFor(m => Model.ReturnUrl)
+
+        <div class="col-sm-9 offset-sm-3">
+            <input type="submit" value="Login" class="btn btn-primary" />
+        </div>
+
+</fieldset>
+}

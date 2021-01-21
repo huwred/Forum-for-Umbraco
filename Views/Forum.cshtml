@@ -1,0 +1,25 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using ClientDependency.Core.Mvc;
+@{
+	Layout = "ForumMaster.cshtml";
+}
+<div class="row">
+    <div class="col-12">
+        @Html.Partial("Forums/DisplayForumInfo")
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        @Html.Partial("Forums/ListForums")
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        @Html.Partial("Forums/ListPosts")
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        @Html.Partial("Forums/CreateNewPost")
+    </div>
+</div>

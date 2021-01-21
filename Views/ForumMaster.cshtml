@@ -1,0 +1,87 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using ContentModels = Umbraco.Web.PublishedModels;
+@using ClientDependency.Core.Mvc;
+
+@{
+    Layout = "Master.cshtml";
+
+    // You may need these, so  un-comment out any you have not already included in your master template
+
+    //Html.RequiresJs("~/scripts/jquery-3.5.1.min.js")
+    //    .RequiresJs("~/scripts/bootstrap.bundle.min.js")
+    //    .RequiresJs("~/scripts/jquery.validate.min.js")
+    //    .RequiresJs("~/scripts/jquery.validate.unobtrusive.min.js");
+
+
+}
+@section Styles{
+    <link rel="stylesheet" href="@Url.Content("~/css/forums.css")" />
+}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            @Html.Partial("Forums/breadcrumb")
+
+        </div>
+        <div class="col-12">
+            <span class="float-right">
+                @Html.Partial("Member/ForumAuth.LoginStatus")
+            </span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            @RenderBody()
+        </div>
+    </div>
+</div>
+<footer class="forum-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                Media Wizards Forum - a Forum for Umbraco
+            </div>
+        </div>
+    </div>
+</footer>
+<!-- scripts -->
+@section extrascripts
+{
+    @Html.RenderJsHere()
+    <script src="@Url.Content("~/scripts/tinymce/tinymce.min.js")"></script>
+    <script>
+        $(document).ready(function () {
+            tinymce.init({
+                selector: 'textarea',
+                plugins: "link lists anchor advcode codesample",
+                theme: "silver",
+                toolbar: "undo redo | styleselect | bullist numlist | indent outdent | link codesample",
+                statusbar: false,
+                menubar: false
+            });
+            var returnUrl = '@TempData["returnUrl"]';
+            if (returnUrl.length > 1) {
+                window.pageRedirect(returnUrl);
+            }
+
+            $(".post-delete").click(function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                var postId = $(this).data("postid");
+                deletePost(postId);
+            });
+        });
+
+        function deletePost(postId) {
+            if (window.confirm("Are you sure you want to delete this post?")) {
+
+                $.get("/Umbraco/Api/ForumsApi/DeletePost/?id=" + postId,
+                    function (data, status) {
+                        $('#post_' + postId).fadeOut();
+
+                    }).fail(function (result) { alert("sorry, there was an error deleting this post"); });
+
+            }
+        }
+    </script>
+}

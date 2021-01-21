@@ -1,0 +1,64 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using Forums
+
+@{
+    var posts = Model.Children()
+        .Where(x => x.IsDocumentType("Forumpost") && x.IsVisible()).ToList();
+
+    if (posts.Any())
+    {
+        <div class="forum-posts col-12">
+            <table class="table" style="display: block;">
+                <thead class="row">
+                    <tr class="row col-12">
+                        <th scope="col" class="col-sm-7">Posts</th>
+                        <th scope="col" class="col-sm-2">Replies</th>
+                        <th scope="col" class="col-sm-3">Latest post</th>
+                    </tr>
+                </thead>
+                <tbody class="row">
+                    @foreach (var post in posts
+                        .OrderByDescending(x => x.GetForumInfo().latestPost)
+                        .ThenBy(x => x.Value<int>("stickyness")))
+                    {
+                        var cacheInfo = post.GetForumInfo();
+                    <tr class="row col-12 post-summay">
+                        <td class="col-sm-7 post-title">
+                            @if (post.Value<int>("stickyness") > 0)
+                            {
+                                <span class="fa fa-star"></span>
+                            }
+                            <a href="@post.Url">@post.Value("postTitle")</a>
+                            <div class="post-summay-meta">
+                                started by @post.Value("postCreator")
+                                @ForumHelper.GetRelativeDate(post.CreateDate)
+                            </div>
+                        </td>
+                        <td class="col-sm-2 post-count">@(cacheInfo.Count-1)</td>
+                        <td class="col-sm-3 post-last">@ForumHelper.GetRelativeDate(cacheInfo.latestPost) by @cacheInfo.lastpostAuthor</td>
+                    </tr>
+                    }</tbody>
+</table>
+        </div>
+    }
+    else if(Model.HasValue("postAtRoot") && Model.Value<int?>("postAtRoot") == 1)
+    {
+        <div class="forum-posts">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Post</th>
+                    <th>Latest</th>
+                    <th>Replies</th>
+                </tr>
+                </thead>
+                <tr class="post-summay">
+                    <td colspan="3" class="post-title">
+                        No posts yet, be the first to make one.
+                    </td>
+
+                </tr>
+            </table>
+        </div>
+    }
+}

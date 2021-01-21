@@ -1,0 +1,17 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@{
+    if ( Members.IsLoggedIn())
+    {
+        <span>
+            <span class="fas fa-star" aria-hidden="true" style="color: gold;"></span>
+            Welcome <a href="/profile" rel="no-follow" title="View profile">@Members.GetCurrentMember().Name</a>, <a href="/logout">Logout</a>
+        </span>
+    }
+    else
+    {
+        <span>
+            <span class="far fa-star" aria-hidden="true" ></span>
+            <a href="/login">Login</a> / <a href="/register">Register</a>
+        </span>
+    }
+}

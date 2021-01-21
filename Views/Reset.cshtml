@@ -1,0 +1,15 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<ContentModels.Reset>
+@using ContentModels = Umbraco.Web.PublishedModels;
+@{
+    Layout = "AuthMaster.cshtml";
+    var resetGuid = Request.QueryString["resetGUID"];
+
+    if (string.IsNullOrWhiteSpace(resetGuid))
+    {
+        @Html.Action("RenderForgotPassword", "ForumAuthSurface")
+    }
+    else
+    {
+        @Html.Action("RenderResetPassword", "ForumAuthSurface")
+    }
+}

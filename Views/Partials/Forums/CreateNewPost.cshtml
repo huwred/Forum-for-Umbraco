@@ -1,0 +1,56 @@
+@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using ContentModels = Umbraco.Web.PublishedModels;
+@using ClientDependency.Core.Mvc;
+
+@*
+    allows people to create a new post (if the forum permissions let them)
+*@
+
+@{
+
+    var create = Request.QueryString["create"];
+    
+    if ( Model.Value<bool>("postAtRoot") && MemberCanPost(Model) )
+    {
+        if (!string.IsNullOrWhiteSpace(create) && create == "true")
+        {
+            @Html.Partial("Forums/RenderPostEditor",
+                Model,
+                new ViewDataDictionary(this.ViewData) { { "showTitle", true}})
+        }
+        else
+        {
+            <a href="?create=true" class="btn btn-primary">New Post</a>
+        }
+    }
+}
+
+
+@functions {
+
+    public bool MemberCanPost(IPublishedContent item)
+    {
+        if (!Members.IsLoggedIn())
+            return false;
+
+        var canPostGroups = item.Value<string>("canPostGroups");
+        
+        // default(blank list) is anyone can post
+        if (string.IsNullOrWhiteSpace(canPostGroups))
+            return true;
+        
+        // is the user a member of a group
+        // is the user in any of those groups ?
+        var allowedGroupList = new List<string>();
+        foreach (var memberGroupStr in canPostGroups.Split(','))
+        {
+            var memberGroup = Services.MemberGroupService.GetById(Convert.ToInt32(memberGroupStr));
+            if (memberGroup != null)
+            {
+                allowedGroupList.Add(memberGroup.Name);
+            }
+        }
+        return Members.IsMemberAuthorized(allowGroups: allowedGroupList);
+    }
+
+}

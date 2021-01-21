@@ -1,0 +1,7 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<ContentModels.Register>
+@using ContentModels = Umbraco.Web.PublishedModels;
+@{
+    Layout = "AuthMaster.cshtml";
+}
+
+@Html.Action("RenderRegister", "ForumAuthSurface")

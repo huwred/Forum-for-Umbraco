@@ -1,0 +1,86 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using System.EnterpriseServices
+@using System.ServiceModel.Security
+@using Forums
+
+@*
+    lists all the child forums of this one. 
+    (uses the cache, to get post count and latest post - without having to recurse everytime)
+*@
+
+@{
+
+    var forums = Model.Children().Where(x => x.IsDocumentType("Forum") && x.IsVisible() &&  (x.Value<int?>("membersOnly") !=1 || (x.Value<int?>("membersOnly") == 1 && Members.IsLoggedIn()) )).ToList();
+
+    if ( forums.Any() )
+    {
+        <div class="forum-list col-12">
+            <table class="table" style="display: block;">
+
+                <thead class="row">
+                    <tr class="row col-12">
+                        <th scope="col" class="col-sm-7">Forums</th>
+                        <th scope="col" class="col-sm-2">Posts</th>
+                        <th scope="col" class="col-sm-3">Latest post</th>
+                    </tr>
+                </thead>
+                <tbody class="row">
+                    @foreach (var forum in forums)
+                    {
+                        if (CanView(forum))
+                        {
+                            var cacheInfo = forum.GetForumInfo();
+
+                            <tr class="row col-12">
+                                <td class="col-sm-7">
+                                    <strong>
+                                        <a href="@forum.Url()">
+                                            @forum.Value("forumName")
+                                        </a>
+                                    </strong>
+                                    <small>
+                                        @forum.Value("forumIntro")
+                                    </small>
+                                </td>
+                                <td class="col-sm-2">@cacheInfo.Count</td>
+                                <td class="col-sm-3">
+                                    @ForumHelper.GetRelativeDate(cacheInfo.latestPost) by
+                                    @cacheInfo.lastpostAuthor
+                                </td>
+                            </tr>
+                        }
+
+
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@functions
+{
+    public bool CanView(IPublishedContent model)
+    {
+
+        var canViewGroups = model.Value<string>("canViewGroups");
+        //all members allowed
+        if (String.IsNullOrWhiteSpace(canViewGroups))
+            return true;
+
+        var allowedGroupList = new List<string>();
+        foreach (var memberGroupStr in canViewGroups.Split(','))
+        {
+            var memberGroup = Services.MemberGroupService.GetById(Convert.ToInt32(memberGroupStr));
+            if (memberGroup != null)
+            {
+                allowedGroupList.Add(memberGroup.Name);
+            }
+        }
+        //check if member is one of the allowed groups
+
+        return Members.IsMemberAuthorized(null, allowedGroupList);
+    }
+
+
+}

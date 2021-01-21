@@ -1,0 +1,11 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<ContentModels.ForumPost>
+@using ContentModels = Umbraco.Web.PublishedModels;
+@{
+    Layout = "ForumMaster.cshtml";
+}
+<div class="row">
+    <div class="col-12">
+        @Html.Partial("Forums/DisplayThread")
+    </div>
+</div>
+

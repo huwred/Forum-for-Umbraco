@@ -1,0 +1,12 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<ContentModels.Profile>
+@using ContentModels = Umbraco.Web.PublishedModels;
+@{
+	Layout = "AuthMaster.cshtml";
+}
+@if (!string.IsNullOrWhiteSpace(Request.QueryString["edit"]))
+{
+    @Html.Partial("Member/ForumAuth.EditProfile", Model, new ViewDataDictionary(this.ViewData) { { "edit", true } }) 
+    return;
+}
+@Html.Action("RenderProfile", "ForumAuthSurface")
+

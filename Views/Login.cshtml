@@ -1,0 +1,12 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<ContentModels.Login>
+@using ContentModels = Umbraco.Web.PublishedModels;
+@{
+    Layout = "AuthMaster.cshtml";
+}
+
+@if (TempData["returnUrl"] != null)
+{
+    Response.Redirect((string)TempData["returnUrl"]);
+}
+
+@Html.Action("RenderLogin", "ForumAuthSurface")

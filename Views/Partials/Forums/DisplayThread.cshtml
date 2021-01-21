@@ -1,0 +1,180 @@
+@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using ContentModels = Umbraco.Web.PublishedModels;
+@using ClientDependency.Core.Mvc;
+@using Forums
+
+@{ 
+    if (!string.IsNullOrWhiteSpace(Request.QueryString["edit"]))
+    {
+        var showTitle = Model.Parent.IsDocumentType("Forum");
+        @Html.Partial("Forums/RenderPostEditor",
+            Model,
+            new ViewDataDictionary(this.ViewData) {
+                { "showTitle", showTitle},
+                { "edit", true }
+            }) return;
+
+    }
+
+    if (Model.Parent.IsDocumentType("ForumPost"))
+    {
+        // if this post has a parent post, that's the page we
+        // want people to see (the full thread)
+        Response.Redirect(Model.Parent.Url);
+    }
+}
+
+@Html.Partial("Forums/DisplayForumInfo", Model.Parent)
+
+<div class="forum-post-thread">
+    <ul class="forum-thread">
+        @DisplayPost((Umbraco.Web.PublishedModels.ForumPost)Model)
+
+        @foreach (var reply in Model.Children().Where(x => x.IsDocumentType("Forumpost")))
+        {
+            @DisplayPost((Umbraco.Web.PublishedModels.ForumPost)reply, false);
+        }
+    </ul>
+
+    @* // if the forum and post are active, show the reply box.  *@
+    @if (DoesForumAcceptPosts(Model.Parent) && Model.Value<bool>("allowReplies"))
+    {
+        @Html.Partial("Forums/RenderPostEditor", Model, new ViewDataDictionary(this.ViewData) { { "showTitle", false } })
+    }
+</div>
+
+@helper DisplayPost(Umbraco.Web.PublishedModels.ForumPost post, bool showTitle = true)
+{
+    <li class="post-detail" id="post_@post.Id">
+        <div class="row">
+            <div class="col-12">
+                @if (post.IsVisible())
+                {
+                    <div class="post-detail-info">
+                        <div class="post-author">
+                            @DisplayPostAuthor(post)
+                        </div>
+                    </div>
+
+                    <div class="post-detail-body">
+                        <div class="post-title">
+                            @if (showTitle)
+                            {
+                                <h3 id="@post.Id">
+                                    @post.PostTitle
+                                </h3>
+
+                            }
+                            <div class="post-date">
+                                posted @ForumHelper.GetRelativeDate(post.CreateDate)
+                                @if (post.UpdateDate > post.CreateDate.AddSeconds(10))
+                                {
+                                    <span class="text-muted">
+                                        and edited @ForumHelper.GetRelativeDate(post.UpdateDate)
+                                    </span>
+
+                                }
+                                <a href="#@post.Id">#</a>
+                            </div>
+                        </div>
+
+                        <div class="post-body">
+                            @post.PostBody
+                        </div>
+                    </div>
+                    <div class="post-detail-meta">
+                        @DisplayPostTools(post)
+                    </div>
+                }
+                else
+                {
+                    // hidden posts are deleted
+                    <div class="post-deleted">
+                        @if (post.DeletedByAuthor)
+                        {
+                            <div class="alert alert-warning">post deleted by author</div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">post has been removed</div>
+
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </li>
+}
+
+@helper DisplayPostAuthor(Umbraco.Web.PublishedModels.ForumPost post)
+{
+    int authorId = post.PostAuthor != null ? post.PostAuthor.Id : -1;
+
+    if (authorId > 0)
+    {
+        var author = Members.GetById(authorId);
+        if (author != null)
+        {
+
+            string authorEmail = author.Value<string>("email");
+
+            <span class="author-detail">
+                <img src="@ForumHelper.GravatarURL(authorEmail)" class="gravatar-image" />
+                @author.Name
+            </span> 
+            return;
+        }
+    }
+
+    // fall back, to the string name, (then the umbraco user)
+    // this protects us should the member be deleted in umbraco
+    <span class="author-detail">
+        <img src="@ForumHelper.GravatarURL(string.Empty)" class="gravatar-image" />
+        @post.PostCreator
+    </span>
+
+}
+
+@helper DisplayPostTools(Umbraco.Web.PublishedModels.ForumPost post)
+{
+    int authorId = post.PostAuthor != null ? post.PostAuthor.Id : -1;
+    if (Members.GetCurrentMemberId() == authorId && Members.IsLoggedIn())
+    {
+    <ul class="post-tools">
+        <li>
+            <a class="post-delete" data-postid="@post.Id">
+                <span class="fa fa-trash" aria-hidden="true"></span> <span class="hidden-xs">delete</span>
+            </a>
+        </li>
+        <li>
+            <a class="post-edit" href="@post.Url?edit=true">
+                <span class="fa fa-edit" aria-hidden="true"></span> <span class="hidden-xs">edit</span>
+            </a>
+        </li>
+    </ul>
+
+    }
+}
+
+@functions { 
+    public bool DoesForumAcceptPosts(IPublishedContent item)
+    {
+        // does recursing up get false?
+        if (item.Value<bool>("forumActive") == false)
+        {
+            return false;
+        }
+
+        // thing is this forum may be active, but a parent forum may be off...
+        if (item.Parent.IsDocumentType("Forum"))
+        {
+            // so if parent is forum go up to it
+            return DoesForumAcceptPosts(item.Parent);
+        }
+
+        // here.. we have reached the top and not found a false (forum off)
+        // so it must be on...
+        return true;
+    }
+
+}

@@ -1,0 +1,73 @@
+@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@using System.Web.Mvc.Html
+@using ClientDependency.Core.Mvc
+@using Umbraco.Web
+@using Umbraco.Web.Controllers
+
+
+@{
+    var profileModel = Members.GetCurrentMemberProfileModel();
+
+    Html.EnableClientValidation();
+    Html.EnableUnobtrusiveJavaScript();
+
+    var success = TempData["ProfileUpdateSuccess"] != null;
+}
+
+@if (Members.IsLoggedIn() && profileModel != null)
+{
+    if (success)
+    {
+        @* This message will show if profileModel.RedirectUrl is not defined (default) *@
+        <p>Profile updated</p>
+    }
+
+    using (Html.BeginUmbracoForm<UmbProfileController>("HandleUpdateProfile"))
+    {
+        <fieldset>
+
+            @Html.ValidationSummary("profileModel", true)
+            <div class="form-group">
+                @Html.LabelFor(m => profileModel.Name, new { @class = "control-label col-3" })
+                @Html.TextBoxFor(m => profileModel.Name)
+                @Html.ValidationMessageFor(m => profileModel.Name)
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => profileModel.Email, new { @class = "control-label col-3" })
+                @Html.TextBoxFor(m => profileModel.Email)
+                @Html.ValidationMessageFor(m => profileModel.Email)
+            </div>
+
+            @for (var i = 0; i < profileModel.MemberProperties.Count; i++)
+            {
+                <div class="form-group">
+                    @Html.LabelFor(m => profileModel.MemberProperties[i].Value, profileModel.MemberProperties[i].Name, new { @class = "control-label col-3" })
+
+                        @if (profileModel.MemberProperties[i].Alias == "receiveNotifications")
+                        {
+                            bool ischecked = profileModel.MemberProperties[i].Value == "1";
+                            <input type="checkbox" value="1" name="@($"profileModel.MemberProperties[{i}].Value")" id="@($"profileModel_MemberProperties_{i}__Value")" @if(ischecked){@Html.Raw("checked")}/>
+                        }
+                        else
+                        {
+                            @Html.EditorFor(m => profileModel.MemberProperties[i].Value)
+                        }
+                    @*
+                        By default this will render a textbox but if you want to change the editor template for this property you can
+                        easily change it. For example, if you wanted to render a custom editor for this field called "MyEditor" you would
+                        create a file at ~/Views/Shared/EditorTemplates/MyEditor.cshtml", then you will change the next line of code to
+                        render your specific editor template like:
+                        @Html.EditorFor(m => profileModel.MemberProperties[i].Value, "MyEditor")
+                    *@
+                        @Html.HiddenFor(m => profileModel.MemberProperties[i].Alias)
+                    </div>
+
+            }
+            <div class="form-group">
+                <button class="btn btn-primary">Save</button>
+            </div>
+
+        </fieldset>
+    }
+}
