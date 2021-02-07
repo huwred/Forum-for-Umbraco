@@ -126,7 +126,7 @@ namespace Forums
             var threadTitle = root.Value<string>("postTitle");
             var updateBody = post.Value<HtmlString>("postBody");
             var fromAddress = Current.Configs.Settings().Content.NotificationEmailAddress;
-            var authorName = author != null ? ((IPublishedContent)author).Name : "Someone";
+            var authorName = author != null ? ((IPublishedContent)author).Name : _localisation.GetDictionaryItemByKey("Forums.NotificationAuthor").GetDefaultValue();
 
 
             string siteUrl = HttpContext.Current.Request.Url.AbsoluteUri.Replace(HttpContext.Current.Request.Url.AbsolutePath, string.Empty);
@@ -150,15 +150,14 @@ namespace Forums
                 IsBodyHtml = true
             };
 
-            foreach (var recipient in recipients)
+            foreach (var recipient in recipients.Where(recipient => !string.IsNullOrWhiteSpace(recipient)))
             {
-                if (!string.IsNullOrWhiteSpace(recipient))
-                    message.Bcc.Add(recipient);
+                message.Bcc.Add(recipient);
             }
 
             try
             {
-                //_Logger.Info<ForumNotificationMgr>("Sending Email {0} to {1} people", threadTitle, recipients.Count);
+                _Logger.Info<ForumNotificationMgr>("Sending Email {0} to {1} people", threadTitle, recipients.Count);
                 // smtp (assuming you've set all this up)
                 using ( SmtpClient smtp = new SmtpClient())
                 {
@@ -192,7 +191,7 @@ namespace Forums
                 {"{{newOld}}", newPost ? "New" : "Updated"}
             };
 
-            return template.ReplaceMany(parameters); ;
+            return template.ReplaceMany(parameters);
         }
 
 

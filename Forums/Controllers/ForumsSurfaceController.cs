@@ -18,6 +18,8 @@ namespace Forums
         [HttpPost]
         public ActionResult PostReply([Bind(Prefix="Reply")]ForumsPostModel model)
         {
+            IEnumerable<ILanguage> languages = Services.LocalizationService.GetAllLanguages();
+
             if (!ModelState.IsValid)
             {
                 ModelState.AddModelError("Reply", "Error posting (invalid model)");
@@ -41,8 +43,8 @@ namespace Forums
 
             var _contentService = Services.ContentService;
 
-            var postName = 
-                string.Format("post_{0}", DateTime.Now.ToString("yyyyMMddhhmmss"));
+            var postName =
+                $"post_{DateTime.UtcNow:yyyyMMddhhmmss}";
  
             if ( !string.IsNullOrWhiteSpace(model.Title))
                 postName = model.Title;
@@ -57,7 +59,12 @@ namespace Forums
 
                 if (post == null)
                 {
-                    post = _contentService.Create(postName, parent, "FOrumpost");
+                    post = _contentService.Create(postName, parent, "Forumpost");
+                    foreach (var language in languages)
+                    {
+                        post.SetCultureName(postName,language.IsoCode);
+                    }
+                    //post.SetCultureName(postName, "en-US");
                     newPost = true;
                 }
 
@@ -86,8 +93,7 @@ namespace Forums
                     // notifications - handled by events
                     // you can write your own handler here,
                     // to be notified when any posts are made
-                    ForumsEventArgs e = new ForumsEventArgs();
-                    e.NewPost = newPost;
+                    ForumsEventArgs e = new ForumsEventArgs {NewPost = newPost};
                     PostSavedEvent(post, e);
 
                     return RedirectToCurrentUmbracoPage();

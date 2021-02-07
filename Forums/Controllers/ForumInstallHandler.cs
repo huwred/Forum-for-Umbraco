@@ -1,15 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Xml.Linq;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 using Umbraco.Core.Composing;
-using Umbraco.Core.Logging.Serilog;
 using Umbraco.Core.Models;
 using Umbraco.Core.PackageActions;
-using Umbraco.Core.Persistence.Querying;
-using Umbraco.Core.Services;
 
 namespace Forums
 {
