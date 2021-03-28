@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 using Umbraco.Core.Models;
 using Umbraco.Web;
+using Umbraco.Web.Models;
 using Umbraco.Web.Mvc;
 
 namespace Forums
@@ -16,7 +20,7 @@ namespace Forums
         public static event ForumEventHandler OnPostSaved;
 
         [HttpPost]
-        public ActionResult PostReply([Bind(Prefix="Reply")]ForumsPostModel model)
+        public ActionResult PostReply([Bind(Prefix="Post")]ForumsPostModel model)
         {
             IEnumerable<ILanguage> languages = Services.LocalizationService.GetAllLanguages();
 
@@ -41,13 +45,18 @@ namespace Forums
                 return CurrentUmbracoPage();
             }
 
+            var posttype = model.IsTopic ? "topic" : "reply";
+
             var _contentService = Services.ContentService;
 
             var postName =
-                $"post_{DateTime.UtcNow:yyyyMMddhhmmss}";
- 
-            if ( !string.IsNullOrWhiteSpace(model.Title))
+                $"reply_{DateTime.UtcNow:yyyyMMddhhmmss}";
+
+            if (!string.IsNullOrWhiteSpace(model.Title))
+            {
                 postName = model.Title;
+            }
+
 
             var parent = _contentService.GetById(model.ParentId);
             bool newPost = false;
@@ -59,12 +68,17 @@ namespace Forums
 
                 if (post == null)
                 {
-                    post = _contentService.Create(postName, parent, "Forumpost");
-                    foreach (var language in languages)
+                    post = _contentService.Create(postName, parent, "forumPost");
+
+                    if (post.AvailableCultures.Any())
                     {
-                        post.SetCultureName(postName,language.IsoCode);
+                        foreach (var language in languages)
+                        {
+                            post.SetCultureName(postName,language.IsoCode);
+                        }
+
                     }
-                    //post.SetCultureName(postName, "en-US");
+
                     newPost = true;
                 }
 
@@ -88,6 +102,16 @@ namespace Forums
                         post.SetValue("allowReplies", true);
                     }
 
+                    post.SetValue("postType", model.IsTopic);
+                    if (model.IsTopic)
+                    {
+                        post.SetValue("intPageSize",parent.GetValue<int>("intPageSize"));
+                    }
+
+                    if (!newPost)
+                    {
+                        post.SetValue("editDate",DateTime.UtcNow);
+                    }
                     _contentService.SaveAndPublish(post);
                     
                     // notifications - handled by events
@@ -99,7 +123,7 @@ namespace Forums
                     return RedirectToCurrentUmbracoPage();
                 }
             }
-            ModelState.AddModelError("Reply", "Error creating the post");
+            ModelState.AddModelError("Post", "Error creating the post");
             return RedirectToCurrentUmbracoPage();
         }
 
@@ -155,5 +179,6 @@ namespace Forums
 
             return !e.Cancel;
         }
+
     }
 }

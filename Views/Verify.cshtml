@@ -2,6 +2,10 @@
 @using ContentModels = Umbraco.Web.PublishedModels;
 @{
     Layout = "AuthMaster.cshtml";
+    if (!String.IsNullOrWhiteSpace((string) TempData["returnUrl"]))
+    {
+        Response.Redirect((string) TempData["returnUrl"]);
+    }
 }
 
 <p>&nbsp;</p>

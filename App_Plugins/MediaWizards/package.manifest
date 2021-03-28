@@ -1,0 +1,20 @@
+{
+  "dashboards": [
+    {
+      "alias": "MediaWizardsForumDashboard",
+      "view": "/App_Plugins/MediaWizards/ForumDashboard.html",
+      "sections": [ "content" ],
+      "weight": -10,
+      "access": [
+        { "grant": "admin" }
+      ]
+    }
+  ],
+  "javascript": [
+    "~/App_Plugins/MediaWizards/Forum.Dashboard.js",
+    "~/App_Plugins/MediaWizards/Forum.resource.js"
+  ],
+  "css": [
+    "~/App_Plugins/MediaWizards/Forum.dashboard.css"
+  ]
+}

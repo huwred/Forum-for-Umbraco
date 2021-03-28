@@ -1,13 +1,14 @@
-﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage< ContentModels.Forum>
+@using ContentModels = Umbraco.Web.PublishedModels;
 @*
     displays the basic's of a forum (tite and intro)
 *@
 
 <div class="forum-info">
     <div class="page-header">
-        <h2><a href="@Model.Url">@Model.Value("forumName")</a></h2>
+        <h2>@Model.ForumName</h2>
     </div>
     <div class="forum-intro">
-        @Html.Raw(Model.Value("forumIntro"))
+        @Html.Raw(Model.ForumIntro)
     </div>
 </div>

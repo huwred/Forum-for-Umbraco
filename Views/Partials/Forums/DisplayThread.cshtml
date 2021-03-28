@@ -1,12 +1,14 @@
-@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@inherits Umbraco.Web.Mvc.UmbracoViewPage< ContentModels.ForumPost>
 @using ContentModels = Umbraco.Web.PublishedModels;
 @using ClientDependency.Core.Mvc;
 @using Forums
 
-@{ 
+@{
+    var parent = Model.Parent<Forum>();
+
     if (!string.IsNullOrWhiteSpace(Request.QueryString["edit"]))
     {
-        var showTitle = Model.Parent.IsDocumentType("Forum");
+        var showTitle = parent.IsDocumentType("Forum");
         @Html.Partial("Forums/RenderPostEditor",
             Model,
             new ViewDataDictionary(this.ViewData) {
@@ -16,34 +18,50 @@
 
     }
 
-    if (Model.Parent.IsDocumentType("ForumPost"))
+    if (parent.IsDocumentType("forumPost"))
     {
         // if this post has a parent post, that's the page we
         // want people to see (the full thread)
-        Response.Redirect(Model.Parent.Url);
+        Response.Redirect(parent.Url());
     }
 }
 
-@Html.Partial("Forums/DisplayForumInfo", Model.Parent)
+@Html.Partial("Forums/DisplayForumInfo", parent)
 
 <div class="forum-post-thread">
     <ul class="forum-thread">
-        @DisplayPost((Umbraco.Web.PublishedModels.ForumPost)Model)
-
-        @foreach (var reply in Model.Children().Where(x => x.IsDocumentType("Forumpost")))
+        @DisplayPost(Model)
+        <li class="row align-right" style="display:none">
+            <select class="form-control col-sm-3">
+                <option value="DESC">Oldest First</option>
+                <option value="ASC">Newest First</option>
+            </select>
+        </li>
+        @{
+            var pageSize = Model.Value<int>("intPageSIze");
+            int.TryParse(Request.QueryString["page"], out var page);
+            var items = Model.Children().Where(x => x.IsDocumentType("Forumpost") && !x.Value<bool>("postType"));
+            var totalPages = (int)Math.Ceiling((double)items.Count() / (double)pageSize);
+            ViewBag.Page = page;
+            ViewBag.TotalPages = totalPages;
+        }
+        @foreach (var reply in items.OrderBy(x => x.CreateDate).Skip((page - 1) * pageSize).Take(pageSize))
         {
-            @DisplayPost((Umbraco.Web.PublishedModels.ForumPost)reply, false);
+            @DisplayPost((ContentModels.ForumPost)reply, false);
         }
     </ul>
-
+    @if (totalPages > 1)
+    {
+        @Html.Partial("_PagerView")
+    }
     @* // if the forum and post are active, show the reply box.  *@
-    @if (DoesForumAcceptPosts(Model.Parent) && Model.Value<bool>("allowReplies"))
+    @if (DoesForumAcceptPosts(parent) && Model.Value<bool>("allowReplies"))
     {
         @Html.Partial("Forums/RenderPostEditor", Model, new ViewDataDictionary(this.ViewData) { { "showTitle", false } })
     }
 </div>
 
-@helper DisplayPost(Umbraco.Web.PublishedModels.ForumPost post, bool showTitle = true)
+@helper DisplayPost(ContentModels.ForumPost post, bool showTitle = true)
 {
     <li class="post-detail" id="post_@post.Id">
         <div class="row">
@@ -55,7 +73,6 @@
                             @DisplayPostAuthor(post)
                         </div>
                     </div>
-
                     <div class="post-detail-body">
                         <div class="post-title">
                             @if (showTitle)
@@ -63,28 +80,21 @@
                                 <h3 id="@post.Id">
                                     @post.PostTitle
                                 </h3>
-
                             }
                             <div class="post-date">
                                 posted @ForumHelper.GetRelativeDate(post.CreateDate)
-                                @if (post.UpdateDate > post.CreateDate.AddSeconds(10))
+                                @if (post.EditDate > post.CreateDate.AddSeconds(10))
                                 {
-                                    <span class="text-muted">
-                                        and edited @ForumHelper.GetRelativeDate(post.UpdateDate)
-                                    </span>
-
+                                    <span class="text-danger">- last edited @ForumHelper.GetRelativeDate(post.EditDate)</span>
                                 }
                                 <a href="#@post.Id">#</a>
                             </div>
                         </div>
-
                         <div class="post-body">
                             @post.PostBody
                         </div>
                     </div>
-                    <div class="post-detail-meta">
-                        @DisplayPostTools(post)
-                    </div>
+                    <div class="post-detail-meta">@DisplayPostTools(post)</div>
                 }
                 else
                 {
@@ -106,7 +116,7 @@
     </li>
 }
 
-@helper DisplayPostAuthor(Umbraco.Web.PublishedModels.ForumPost post)
+@helper DisplayPostAuthor(ContentModels.ForumPost post)
 {
     int authorId = post.PostAuthor != null ? post.PostAuthor.Id : -1;
 
@@ -135,10 +145,10 @@
 
 }
 
-@helper DisplayPostTools(Umbraco.Web.PublishedModels.ForumPost post)
+@helper DisplayPostTools(ContentModels.ForumPost post)
 {
     int authorId = post.PostAuthor != null ? post.PostAuthor.Id : -1;
-    if (Members.GetCurrentMemberId() == authorId && Members.IsLoggedIn())
+    if ((Members.GetCurrentMemberId() == authorId && Members.IsLoggedIn()) || Members.GetCurrentUserRoles().Contains("ForumAdministrator") )
     {
     <ul class="post-tools">
         <li>
@@ -147,7 +157,7 @@
             </a>
         </li>
         <li>
-            <a class="post-edit" href="@post.Url?edit=true">
+            <a class="post-edit" href="@post.Url()?edit=true">
                 <span class="fa fa-edit" aria-hidden="true"></span> <span class="hidden-xs">edit</span>
             </a>
         </li>
@@ -166,7 +176,7 @@
         }
 
         // thing is this forum may be active, but a parent forum may be off...
-        if (item.Parent.IsDocumentType("Forum"))
+        if (item.Parent != null && item.Parent.IsDocumentType("Forum"))
         {
             // so if parent is forum go up to it
             return DoesForumAcceptPosts(item.Parent);

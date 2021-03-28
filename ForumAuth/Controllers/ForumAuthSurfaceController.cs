@@ -3,6 +3,7 @@ using System.Web.Mvc;
 using Umbraco.Web.Mvc;
 using Umbraco.Web;
 using Umbraco.Core.Logging;
+using Umbraco.Core.Models;
 
 namespace Forums
 {
@@ -15,15 +16,15 @@ namespace Forums
         {
             ForumLoginViewModel login = new ForumLoginViewModel();
 
-            Logger.Info<ForumAuthSurfaceController>("Login URL: {0}", HttpContext.Request.Url.AbsolutePath);
+            Logger.Info<ForumAuthSurfaceController>("Login URL: {0}", HttpContext.Request.Url?.AbsolutePath);
 
-            login.ReturnUrl = HttpContext.Request.Url.ToString() ;
-            if ( HttpContext.Request.Url.AbsolutePath == ForumAuthConstants.LoginUrl.TrimEnd('/'))
+            login.ReturnUrl = HttpContext.Request.Url?.ToString() ;
+            if ( HttpContext.Request.Url?.AbsolutePath == Umbraco.GetDictionaryValue("ForumAuthConstants.LoginUrl","/login").TrimEnd('/'))
             {
                 login.ReturnUrl = "/forums";
             }
 
-            return PartialView( ForumAuthConstants.LoginView, login);
+            return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.LoginView","Member/ForumAuth.Login") , login);
         }
 
         [HttpPost]
@@ -87,7 +88,7 @@ namespace Forums
             {
                 // somethig big time went boom...
                 Logger.Error<ForumAuthSurfaceController>("Error logging on {0}", ex.ToString());
-                ModelState.AddModelError(ForumAuthConstants.LoginKey, "Error logging on" + ex.ToString());
+                ModelState.AddModelError(ForumAuthConstants.LoginKey, "Error logging on" + ex);
             }
 
             return CurrentUmbracoPage();
@@ -110,7 +111,7 @@ namespace Forums
 
         public ActionResult RenderForgotPassword()
         {
-            return PartialView( ForumAuthConstants.ForgotPasswordView , new ForumForgotPasswordModel());
+            return PartialView( Umbraco.GetDictionaryValue("ForumAuthConstants.ForgotPasswordView","Member/ForumAuth.ForgotPassword") , new ForumForgotPasswordModel());
         }
 
         [HttpPost]
@@ -120,7 +121,7 @@ namespace Forums
             TempData["ResetSent"] = false;
             if (!ModelState.IsValid)
             {
-                return PartialView(ForumAuthConstants.ForgotPasswordView, model);
+                return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.ForgotPasswordView","Member/ForumAuth.ForgotPassword"), model);
             }
 
             // var membershipHelper = new MembershipHelper(UmbracoContext.Current);
@@ -133,13 +134,14 @@ namespace Forums
             {
                 // we found a user with that email ....
                 DateTime expires = DateTime.Now.AddMinutes(20);
-                
-                member.SetValue(ForumAuthConstants.ResetRequestGuidPropery, expires.ToString("ddMMyyyyHmmssFFFF"));
+                var guid = new Guid("00000000-0000-0000-0000-" + expires.ToString("ddMMyyHHmmss"));
+                //00000000-0000-0000-0000-ddMMyyHHmmss
+                member.SetValue(ForumAuthConstants.ResetRequestGuidPropery, guid);
                 memberService.Save(member);
 
                 // send email....
                 ForumEmailHelper helper = new ForumEmailHelper();
-                helper.SendResetPassword(Umbraco,member.Email, expires.ToString("ddMMyyyyHmmssFFFF"));
+                helper.SendResetPassword(Umbraco,member.Email, guid.ToString());
 
                 TempData["ResetSent"] = true;
             }
@@ -147,7 +149,7 @@ namespace Forums
             {
                 ModelState.AddModelError(ForumAuthConstants.ForgotPasswordKey, 
                     GetDictionaryOrDefault("MemberAuth.Reset.NoUser", "No user found"));
-                return PartialView(ForumAuthConstants.ForgotPasswordView);
+                return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.ForgotPasswordView","Member/ForumAuth.ForgotPassword"));
             }
 
             return CurrentUmbracoPage();
@@ -156,7 +158,7 @@ namespace Forums
 
         public ActionResult RenderResetPassword()
         {
-            return PartialView(ForumAuthConstants.ResetPasswordView, new ForumPasswordResetModel());
+            return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.ResetPasswordView","Member/ForumAuth.ResetPassword"), new ForumPasswordResetModel());
         }
 
         [HttpPost]
@@ -185,8 +187,8 @@ namespace Forums
                         if (member.GetValue<string>(ForumAuthConstants.ResetRequestGuidPropery) == resetGuid)
                         {
                             // ok so the match. check to see if it hasn't expired...
-
-                            DateTime expiry = DateTime.ParseExact(resetGuid, "ddMMyyyyHHmmssFFFF", null);
+                            var guidTime = resetGuid.Replace("00000000-0000-0000-0000-","");
+                            DateTime expiry = DateTime.ParseExact(guidTime, "ddMMyyHHmmss", null);
 
                             // is expiry less than now.
                             if (DateTime.Now.CompareTo(expiry) < 0)
@@ -233,7 +235,7 @@ namespace Forums
 
         public ActionResult RenderRegister()
         {
-            return PartialView(ForumAuthConstants.RegisterView, new ForumRegisterViewModel());
+            return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.RegisterView","Member/ForumAuth.Register"), new ForumRegisterViewModel());
         }
 
         [HttpPost]
@@ -264,7 +266,8 @@ namespace Forums
             }
 
             var memberTypeService = Services.MemberTypeService;
-            var memberType = memberTypeService.Get(ForumAuthConstants.NewAccountMemberType);
+            var membertype = Services.LocalizationService.GetDictionaryItemByKey("ForumAuthConstants.NewAccountMemberType");
+            var memberType = memberTypeService.Get(membertype.GetDefaultValue());
 
             try
             {
@@ -297,7 +300,7 @@ namespace Forums
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(ForumAuthConstants.RegisterKey, "Error creating account:" + ex.ToString());
+                ModelState.AddModelError(ForumAuthConstants.RegisterKey, "Error creating account:" + ex);
                 return CurrentUmbracoPage();
             }
 
@@ -323,8 +326,7 @@ namespace Forums
 
             var memberService = Services.MemberService;
 
-            Guid userKey;
-            if (Guid.TryParse(guid, out userKey))
+            if (Guid.TryParse(guid, out var userKey))
             {
                 var member = memberService.GetByKey(userKey);
 
@@ -338,20 +340,20 @@ namespace Forums
                 else
                 {
                     return Content(
-                        GetDictionaryOrDefault("MemberAuth.Verfiy.NoAccount", "Can't find account for guid"));
+                        GetDictionaryOrDefault("MemberAuth.Verfiy.NoMatch", "Can't find an account that matches"));
                 }
             }
             else
             {
                 return Content(
-                    GetDictionaryOrDefault("MemberAuth.Verify.NoAccount", "Not a valid account guid"));
+                    GetDictionaryOrDefault("MemberAuth.Verify.InvalidCode", "Not a valid account verification"));
             }
         }
 
         public ActionResult RenderProfile()
         {
 
-            return PartialView(ForumAuthConstants.ProfileView);
+            return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.ProfileView","Member/ForumAuth.ViewProfile"));
         }
         private bool EmailAddressExists(string emailAddress)
         {
@@ -372,7 +374,7 @@ namespace Forums
         {
             if ( EmailAddressExists(emailAddress))
             {
-                return Json(string.Format("The email {0} is already in use", emailAddress),JsonRequestBehavior.AllowGet);
+                return Json(GetDictionaryOrDefault("MemberAuth.Register.ExistingEmail", "Email Address is already in use"),JsonRequestBehavior.AllowGet);
             }
             else
             {
@@ -390,7 +392,7 @@ namespace Forums
 
             if (emailAddress.Contains("@"))
             {
-                var domain = emailAddress.Substring(emailAddress.IndexOf("@")).ToLower();
+                var domain = emailAddress.Substring(emailAddress.IndexOf("@", StringComparison.Ordinal)).ToLower();
                 //Logger.Info<ForumAuthSurfaceController>("Domain Check: {0}", domain);
 
                 if (!string.IsNullOrWhiteSpace(whitelist) && !whitelist.Contains(domain))
@@ -415,7 +417,7 @@ namespace Forums
             }
             else
             {
-                return Json("you cannot register for this site with that email address", JsonRequestBehavior.AllowGet);
+                return Json(GetDictionaryOrDefault("MemberAuth.Register.InvalidDomain", "You cannot register for this site with that email address"), JsonRequestBehavior.AllowGet);
             }
         }
 

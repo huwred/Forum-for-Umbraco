@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<language>
+  <area alias="dashboardTabs">
+    <key alias="MediaWizardsForumDashboard">MediaWizards Forum</key>
+  </area>
+  <area alias="forum">
+    <key alias="title">MediaWizards Forum Settings</key>
+    <key alias="intro"><![CDATA[<p>
+    Thank you for trying out the Media Wizards Forum, the package is now installed.
+    </p>]]></key>
+    <key alias="published">Forum content was published</key>
+  </area>
+</language>

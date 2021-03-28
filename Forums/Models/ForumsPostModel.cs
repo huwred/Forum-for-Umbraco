@@ -19,5 +19,7 @@ namespace Forums
 
         [Required]
         public int AuthorId { get; set; }
+
+        public bool IsTopic { get; set; }
     }
 }

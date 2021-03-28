@@ -1,19 +1,22 @@
 ﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
-@using ClientDependency.Core.Mvc;
 @{
+    // Replace the layout with your master template if it isn't called master.cshtml
+    // You may also need to add the section definitions for Styles and extrascripts
+    // @RenderSection("Styles", false) should go in your head section
+    // @RenderSection("extrascripts", false) should go just above the closing body tag and above @Html.RenderJsHere() if using that
+
     Layout = "Master.cshtml";
+    var allowimages = Model.Value<bool>("allowImages", fallback: Fallback.ToAncestors);
 }
 
-
-@section Header{
+@section Styles{
     <link href="/css/forums.css" rel="stylesheet">
 }
 
-<div class="container">
+<div class="container forum-container">
     <div class="row">
         <div class="col-12">
             @Html.Partial("Forums/breadcrumb")
-
         </div>
         <div class="col-12">
             <span class="float-right">
@@ -30,48 +33,76 @@
 
 
 @section extrascripts{
-    @* 
-    //If theses scripts are not included in your master template then uncomment them here
-    <script src="@Url.Content("~/scripts/jquery-3.5.1.min.js")"></script>
-    <script src="@Url.Content("~/scripts/bootstrap.bundle.min.js")"></script>
-    <script src="@Url.Content("~/scripts/jquery.validate.min.js")"></script>
-    <script src="@Url.Content("~/scripts/jquery.validate.unobtrusive.min.js")"></script>*@
+    @*
+        //If theses scripts are not included in your master template then uncomment them here
+        <script src="@Url.Content("~/scripts/jquery-3.5.1.min.js")"></script>
+        <script src="@Url.Content("~/scripts/bootstrap.bundle.min.js")"></script>
+        <script src="@Url.Content("~/scripts/jquery.validate.min.js")"></script>
+        <script src="@Url.Content("~/scripts/jquery.validate.unobtrusive.min.js")"></script>*@
 
-    <script src="@Url.Content("~/scripts/tinymce/tinymce.min.js")"></script>
+    @*<script src="https://cdn.tiny.cloud/1/0d51qkqkvpxvi8uywqq3h7du8sfqdh3asb7svciuca1p9qv1/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>*@
+    <script src="/scripts/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
-        $(document).ready(function () {
+        console.log('@allowimages');
+        var tools = "code undo redo | styleselect | bullist numlist | indent outdent | link codesample emoticons";
+        if ('@allowimages' === 'True') {
+            tools = tools + "| image ";
+        }
+        $(document).ready(function() {
             tinymce.init({
                 selector: 'textarea',
-                plugins: "link lists anchor advcode codesample",
-                theme: "silver",
-                toolbar: "undo redo | styleselect | bullist numlist | indent outdent | link codesample",
+                browser_spellcheck: true,
+                contextmenu: false,
+                plugins: "link lists anchor codesample image code emoticons",
+                content_css: 'writer',
+                toolbar: tools,
+                file_picker_types: 'image',
+                images_upload_url: "/Umbraco/Api/ForumsApi/TinyMceUpload",
+                images_reuse_filename: true,
                 statusbar: false,
-                menubar: false
+                menubar: false,
+                init_instance_callback: function(editor) {
+                    editor.on('OpenWindow',
+                        function(e) {
+                            console.log('a window was opened.');
+                            console.log(e.dialog);
+                            $('[role=tab]:contains("General")').hide();
+                        });
+                }
             });
             var returnUrl = '@TempData["returnUrl"]';
             if (returnUrl.length > 1) {
                 window.pageRedirect(returnUrl);
             }
-
-            $(".post-delete").click(function (e) {
+            $('.btn-cancel').on('click', function(e) {
+                history.back();
+            });
+            $(".post-delete").click(function(e) {
                 e.stopPropagation();
                 e.preventDefault();
                 var postId = $(this).data("postid");
                 deletePost(postId);
             });
+
+            $('.tox-dialog').on('show',
+                function() {
+                    alert('opened');
+                });
         });
 
         function deletePost(postId) {
             if (window.confirm("Are you sure you want to delete this post?")) {
 
                 $.get("/Umbraco/Api/ForumsApi/DeletePost/?id=" + postId,
-                    function (data, status) {
+                    function(data, status) {
                         $('#post_' + postId).fadeOut();
 
-                    }).fail(function (result) { alert("sorry, there was an error deleting this post"); });
+                    }).fail(function(result) { alert("sorry, there was an error deleting this post"); });
 
             }
         }
+
+
     </script>
 }
 

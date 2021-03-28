@@ -32,7 +32,7 @@ namespace Forums
 
                 string from = Current.Configs.Settings().Content.NotificationEmailAddress;
                 string baseURL = HttpContext.Current.Request.Url.AbsoluteUri.Replace(HttpContext.Current.Request.Url.AbsolutePath, string.Empty);
-                var resetUrl = baseURL + Forums.ForumAuthConstants.ResetUrl + "?resetGUID=" + guid;
+                var resetUrl = baseURL + umbraco.GetDictionaryValue("ForumAuthConstants.ResetUrl","/reset").TrimEnd('/') + "/?resetGUID=" + guid;
 
                 var messageBody = umbraco.GetDictionaryValue("Forum.ResetBody",$@"<h2>Password Reset</h2>
             <p>we have received a request to reset your password</p>
@@ -62,7 +62,7 @@ namespace Forums
 
                 string from = Current.Configs.Settings().Content.NotificationEmailAddress;
                 string baseURL = HttpContext.Current.Request.Url.AbsoluteUri.Replace(HttpContext.Current.Request.Url.AbsolutePath, string.Empty);
-                var resetUrl = baseURL + Forums.ForumAuthConstants.VerifyUrl + "?verifyGUID=" + guid;
+                var resetUrl = baseURL + umbraco.GetDictionaryValue("ForumAuthConstants.VerifyUrl","/verify").TrimEnd('/') + "/?verifyGUID=" + guid;
 
                 var messageBody = umbraco.GetDictionaryValue("Forum.VerifyBody",$@"<h2>Verifiy your account</h2>
             <p>in order to use your account, you first need to verifiy your email address using the link below.</p>

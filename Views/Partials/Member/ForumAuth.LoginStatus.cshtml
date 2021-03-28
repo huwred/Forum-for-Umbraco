@@ -4,14 +4,14 @@
     {
         <span>
             <span class="fas fa-star" aria-hidden="true" style="color: gold;"></span>
-            Welcome <a href="/profile" rel="no-follow" title="View profile">@Members.GetCurrentMember().Name</a>, <a href="/logout">Logout</a>
+            Welcome <a href="/profile" rel="no-follow" title="View profile">@Members.GetCurrentMember().Name</a>, <a href="@Umbraco.GetDictionaryValue("ForumAuthConstants.LogoutUrl","/logout")">Logout</a>
         </span>
     }
     else
     {
         <span>
             <span class="far fa-star" aria-hidden="true" ></span>
-            <a href="/login">Login</a> / <a href="/register">Register</a>
+            <a href="@Umbraco.GetDictionaryValue("ForumAuthConstants.LoginUrl","/login")">Login</a> / <a href="@Umbraco.GetDictionaryValue("ForumAuthConstants.RegisterUrl","/register")">Register</a>
         </span>
     }
 }

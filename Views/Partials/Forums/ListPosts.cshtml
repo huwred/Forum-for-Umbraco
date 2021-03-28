@@ -2,62 +2,94 @@
 @using Forums
 
 @{
-    var posts = Model.Children()
-        .Where(x => x.IsDocumentType("Forumpost") && x.IsVisible()).ToList();
+    int page = int.TryParse(Request.QueryString["page"], out page) ? Page : 1;
 
+    var posts = Model.Children().Where(x => x.IsDocumentType("Forumpost")).ToList();
+    var pageSize = Model.HasValue("intPageSize") ? (int)Model.Value("intPageSize") : 5; ;
+    var totalPages = (int)Math.Ceiling((double)posts.Count() / (double)pageSize);
+    ViewBag.Page = page;
+    ViewBag.TotalPages = totalPages;
     if (posts.Any())
     {
-        <div class="forum-posts col-12">
-            <table class="table" style="display: block;">
-                <thead class="row">
-                    <tr class="row col-12">
-                        <th scope="col" class="col-sm-7">Posts</th>
-                        <th scope="col" class="col-sm-2">Replies</th>
-                        <th scope="col" class="col-sm-3">Latest post</th>
-                    </tr>
+        <div class="col-12 table-responsive">
+            <table class="table table-responsive" style="display: block;">
+                <thead class="table-responsive">
+                <tr class="d-flex">
+                    <th scope="col" class="col-sm-7">Posts</th>
+                    <th scope="col" class="col-sm-2">Replies</th>
+                    <th scope="col" class="col-sm-3">Latest reply</th>
+                </tr>
                 </thead>
-                <tbody class="row">
-                    @foreach (var post in posts
-                        .OrderByDescending(x => x.GetForumInfo().latestPost)
-                        .ThenBy(x => x.Value<int>("stickyness")))
+                <tbody class="table-responsive">
+                @foreach (var post in posts.Skip((page - 1) * pageSize).Take(pageSize)
+                    .OrderByDescending(x => x.Value<int>("stickyness") )
+                    .ThenByDescending(x => x.GetForumInfo(true).latestPost))
+                {
+                    var cacheInfo = post.GetForumInfo(false);
+                    if (post.IsVisible())
                     {
-                        var cacheInfo = post.GetForumInfo();
-                    <tr class="row col-12 post-summay">
-                        <td class="col-sm-7 post-title">
-                            @if (post.Value<int>("stickyness") > 0)
+                        <tr class="d-flex">
+                            <td class="col-sm-7 post-title">
+                                @if (post.Value<int>("stickyness") > 0)
+                                {
+                                    <span class="fa fa-star"></span>
+                                }
+                                <a href="@post.Url()">@post.Value("postTitle")</a>
+                                <div class="">
+                                    started by @post.Value("postCreator")
+                                    @ForumHelper.GetRelativeDate(post.CreateDate)
+                                </div>
+                            </td>
+                            <td class="col-sm-2 post-count">@(cacheInfo.Count)</td>
+                            <td class="col-sm-3">
+                                @if (cacheInfo.latestPost != DateTime.MinValue)
+                                {
+                                    @ForumHelper.GetRelativeDate(cacheInfo.latestPost) <text>by</text>
+                                    @cacheInfo.lastpostAuthor
+                                }
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        <tr class="table-responsive">
+                            @if (post.Value<bool>("deletedByAuthor"))
                             {
-                                <span class="fa fa-star"></span>
+                                <td colspan="3" class="alert alert-warning d-flex">post deleted by author</td>
                             }
-                            <a href="@post.Url">@post.Value("postTitle")</a>
-                            <div class="post-summay-meta">
-                                started by @post.Value("postCreator")
-                                @ForumHelper.GetRelativeDate(post.CreateDate)
-                            </div>
-                        </td>
-                        <td class="col-sm-2 post-count">@(cacheInfo.Count-1)</td>
-                        <td class="col-sm-3 post-last">@ForumHelper.GetRelativeDate(cacheInfo.latestPost) by @cacheInfo.lastpostAuthor</td>
-                    </tr>
-                    }</tbody>
-</table>
+                            else
+                            {
+                                <td colspan="3" class="alert alert-warning d-flex">post has been removed</td>
+
+                            }
+                        </tr>
+                    }
+
+                }</tbody>
+            </table>
+            @if (totalPages > 1)
+            {
+                @Html.Partial("_PagerView")
+            }
         </div>
     }
     else if(Model.HasValue("postAtRoot") && Model.Value<int?>("postAtRoot") == 1)
     {
-        <div class="forum-posts">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th>Post</th>
-                    <th>Latest</th>
-                    <th>Replies</th>
+        <div class="">
+            <table class="table table-responsive" style="display: block;">
+                <thead class="table-responsive">
+                <tr class="d-flex">
+                    <th scope="col" class="col-sm-12">Posts</th>
                 </tr>
                 </thead>
-                <tr class="post-summay">
-                    <td colspan="3" class="post-title">
-                        No posts yet, be the first to make one.
-                    </td>
+                <tbody class="table-responsive">
+                    <tr class="d-flex">
+                        <td class="post-title col-sm-12">
+                            No posts yet, be the first to make one.
+                        </td>
 
-                </tr>
+                    </tr>
+                </tbody>
             </table>
         </div>
     }

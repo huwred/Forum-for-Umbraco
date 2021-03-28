@@ -12,15 +12,25 @@
 }
 @if (CurrentPage.Ancestors().Any())
 {
-    <ul class="breadcrumb">
-        @* For each page in the ancestors collection which have been ordered by Level (so we start with the highest top node first) 
+    <ul class="forum-breadcrumb">
+        @* For each page in the ancestors collection which have been ordered by Level (so we start with the highest top node first)
             Exclude the membership node *@
-        @foreach (var page in CurrentPage.Ancestors().Where(x=> !x.IsDocumentType("Members")).OrderBy(x=>x.Level))
+        @foreach (var page in CurrentPage.Ancestors().OrderBy(x => x.Level))
         {
-            <li><a href="@page.Url()">@page.Name</a>&nbsp;|&nbsp;</li>
+            if (!page.IsDocumentType("forumAuthHolder"))
+            {
+                <li><a href="@page.Url()">@page.Name</a>&nbsp;|&nbsp;</li>
+            }
+
         }
 
         @* Display the current page as the last item in the list *@
         <li class="active">@CurrentPage.Name</li>
+        <li>
+            <form action="/Forums/ForumSearch">
+                <input type="text" placeholder="Quick Search" id="query" name="query" class="form-control-sm" required="required" />
+                <input type="submit" name="Submit" value="Find" class="btn btn-sm btn-info" />
+            </form>
+        </li>
     </ul>
 }

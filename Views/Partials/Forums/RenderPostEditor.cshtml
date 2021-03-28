@@ -28,7 +28,7 @@
         var label = edit ? "Message" : (showTitle ? "Message" : "Reply");
         var btn = edit ? "Save" : (showTitle ? "Submit" : "Save");
 
-        var Reply = new ForumsPostModel();
+        var Post = new ForumsPostModel();
 
         if (edit)
         {
@@ -38,13 +38,14 @@
                 return;
             }
 
-            Reply.Id = Model.Id;
-            Reply.Body = Model.Value<string>("postBody", "");
-            Reply.Title = Model.Value<string>("postTitle", "");
+            Post.Id = Model.Id;
+            Post.Body = Model.Value<string>("postBody", "");
+            Post.Title = Model.Value<string>("postTitle", "");
         }
 
-        Reply.AuthorId = Members.GetCurrentMemberId();
-        Reply.ParentId = Model.Id;
+        Post.AuthorId = Members.GetCurrentMemberId();
+        Post.ParentId = Model.Id;
+        Post.IsTopic = showTitle;
 
         using (Html.BeginUmbracoForm<ForumsSurfaceController>("PostReply", null, new { @class = "form-horizontal forum-reply-form" }))
         {
@@ -56,10 +57,10 @@
                 {
                     <legend>@mode</legend>
                         <div class="form-group">
-                            @Html.LabelFor(m => Reply.Title, new { @class = "control-label col-1" })
+                            @Html.LabelFor(m => Post.Title, new { @class = "control-label col-1" })
                             <div class="col-11">
-                                @Html.TextBoxFor(m => Reply.Title, new { @class = "form-control" })
-                                @Html.ValidationMessageFor(m => Reply.Title)
+                                @Html.TextBoxFor(m => Post.Title, new { @class = "form-control" })
+                                @Html.ValidationMessageFor(m => Post.Title)
                             </div>
                         </div>
 
@@ -67,19 +68,19 @@
 
 
                 <div class="form-group">
-                    @Html.LabelFor(m => Reply.Body, label, new { @class = "control-lable col-sm-1" })
+                    @Html.LabelFor(m => Post.Body, label, new { @class = "control-lable col-sm-1" })
                     <div class="col-11">
-                        @Html.TextAreaFor(m => Reply.Body, 10, 20, new { @class = "form-control" })
-                        @Html.ValidationMessageFor(m => Reply.Body)
+                        @Html.TextAreaFor(m => Post.Body, 10, 20, new { @class = "form-control" })
+                        @Html.ValidationMessageFor(m => Post.Body)
                     </div>
                 </div>
 
-                @Html.HiddenFor(m => Reply.Id)
-                @Html.HiddenFor(m => Reply.ParentId)
-                @Html.HiddenFor(m => Reply.AuthorId)
-
+                @Html.HiddenFor(m => Post.Id)
+                @Html.HiddenFor(m => Post.ParentId)
+                @Html.HiddenFor(m => Post.AuthorId)
+                @Html.HiddenFor(m => Post.IsTopic)
                 <div class="col-11">
-                    <input type="submit" class="btn btn-primary btn-lg" value="@btn" />
+                    <button type="submit" class="btn btn-primary" >@btn</button> <button type="button" class="btn btn-danger btn-cancel" >Cancel</button>
                 </div>
             </fieldset>
         }

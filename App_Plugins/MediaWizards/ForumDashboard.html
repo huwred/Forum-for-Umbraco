@@ -1,0 +1,73 @@
+<div ng-controller="forumDashboardController as vm">
+    <umb-box>
+        <umb-box-content class="" style="position: relative;">
+            <umb-load-indicator ng-if="vm.loading"></umb-load-indicator>
+            <div ng-show="vm.loaded">
+                <div class="forum-header forum-dashboard">
+                    <i class="icon icon-wrench"></i>
+                    <h3><localize key="forum_title"></localize></h3>
+                </div>
+                <div class="forum-dashboard">
+                    <localize key="forum_intro"></localize>
+                </div>
+                <div class="row clearfix">
+                    <h4>Member Properties</h4>
+                    <div class="dash-inner-row" ng-bind-html="vm.memberProperties" ng-show="vm.loaded"></div>
+                </div>
+                <div class="row clearfix" ng-show="vm.loaded">
+                    <div class="span12">
+                        <h4>Forum Pages</h4>
+                        <p ng-hide="(vm.memberContentPublished && vm.contentPublished) || !vm.membership">
+                            You will need to create the webpages
+                            for login, registration and password reset, and account verification.
+                        </p>
+                        <p ng-hide="vm.contentPublished">
+                            You may want to create the Example Forum pages if this is your first install.
+                        </p>
+                        <p ng-hide="vm.memberContentPublished && vm.contentPublished">
+                            If you pick the relevant root content node from the list below, we can
+                            create the pages for you (assuming you don't already have some).
+                        </p>
+                    </div>
+                </div>
+                <div class="row clearfix"><p></p></div>
+                <div class="row clearfix" ng-hide="vm.memberContentPublished && vm.contentPublished">
+                    <div class="control-group umb-control-group -no-border">
+                        <div class="umb-el-wrap">
+                            <div class="span12">
+                                <h4>Content - Setup</h4>
+                                <small>Select a root node using the 'Add' button below</small>
+                            </div>
+                            <div ng-show="vm.loaded" class="memberlogin_node-add  span6">
+                                <a href="#" ng-click="vm.pickRedirectPage()" class="umb-node-preview-add" prevent-default>
+                                    <localize key="general_add" class="ng-isolate-scope">Add</localize>
+                                </a>
+                                <p>*Content will be published to the selected node '{{vm.node.url.text}}', or the root node if none selected.</p>
+
+                                <umb-node-preview ng-show="vm.node"
+                                                  icon="vm.node.icon"
+                                                  name="vm.node.name"
+                                                  published="vm.node.metaData.IsPublished"
+                                                  description="vm.node.status"
+                                                  allow-remove="true"
+                                                  on-remove="vm.node = null">
+                                </umb-node-preview>
+                                <a href="#" prevent-default="" ng-click="vm.createForumContent()" ng-hide="vm.contentPublished || vm.loading" class="btn btn-primary">Create Forum Content pages</a>
+
+                                <a href="#" prevent-default="" ng-click="vm.createMembershipContent()" ng-hide="!vm.contentPublished || vm.memberContentPublished || vm.loading || !vm.membership" class="btn btn-primary">Create Membership pages</a>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="row clearfix" ng-show="vm.memberContentPublished && vm.contentPublished && !vm.installing && !vm.membership">
+                    <p>Forum Content already published</p>
+                </div>
+                <div class="row clearfix" ng-show="vm.contentPublished">
+                    <div class="dash-inner-row" ng-bind-html="vm.publishedProperites" ng-show="vm.contentPublished"></div>
+                </div>
+            </div>
+        </umb-box-content>
+    </umb-box>
+</div>

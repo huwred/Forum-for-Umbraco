@@ -14,25 +14,25 @@
 
     if ( forums.Any() )
     {
-        <div class="forum-list col-12">
-            <table class="table" style="display: block;">
+        <div class="forum-list col-12 table-responsive">
+            <table class="table table-responsive" style="display: block;">
 
-                <thead class="row">
-                    <tr class="row col-12">
+                <thead class="table-responsive">
+                    <tr class="d-flex">
                         <th scope="col" class="col-sm-7">Forums</th>
                         <th scope="col" class="col-sm-2">Posts</th>
                         <th scope="col" class="col-sm-3">Latest post</th>
                     </tr>
                 </thead>
-                <tbody class="row">
+                <tbody class="table-responsive">
                     @foreach (var forum in forums)
                     {
                         if (CanView(forum))
                         {
-                            var cacheInfo = forum.GetForumInfo();
+                            var cacheInfo = forum.GetForumInfo(false);
 
-                            <tr class="row col-12">
-                                <td class="col-sm-7">
+                            <tr class="d-flex">
+                                <td class="col-sm-7" >
                                     <strong>
                                         <a href="@forum.Url()">
                                             @forum.Value("forumName")
@@ -42,10 +42,14 @@
                                         @forum.Value("forumIntro")
                                     </small>
                                 </td>
-                                <td class="col-sm-2">@cacheInfo.Count</td>
+                                <td class="col-sm-2 post-count" >@cacheInfo.Count</td>
                                 <td class="col-sm-3">
-                                    @ForumHelper.GetRelativeDate(cacheInfo.latestPost) by
-                                    @cacheInfo.lastpostAuthor
+                                    @if (cacheInfo.latestPost != DateTime.MinValue)
+                                    {
+                                        @ForumHelper.GetRelativeDate(cacheInfo.latestPost) <text>by</text>
+                                        @cacheInfo.lastpostAuthor
+                                    }
+
                                 </td>
                             </tr>
                         }

@@ -128,6 +128,7 @@ namespace Forums
             var fromAddress = Current.Configs.Settings().Content.NotificationEmailAddress;
             var authorName = author != null ? ((IPublishedContent)author).Name : _localisation.GetDictionaryItemByKey("Forums.NotificationAuthor").GetDefaultValue();
 
+            
 
             string siteUrl = HttpContext.Current.Request.Url.AbsoluteUri.Replace(HttpContext.Current.Request.Url.AbsolutePath, string.Empty);
             string postUrl = $"{siteUrl}{root.Url()}";
