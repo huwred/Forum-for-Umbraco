@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Net;
 using System.Web.Mvc;
 using Umbraco.Web.Mvc;
 using Umbraco.Web;
@@ -63,7 +65,7 @@ namespace Forums
                         {
                             // we need to validate this account before they can logon.
                             ModelState.AddModelError(ForumAuthConstants.LoginKey, 
-                                GetDictionaryOrDefault("MemberAuth.Login.NotVerified", "Email has not been verified"));
+                                Umbraco.GetDictionaryValue("MemberAuth.Login.NotVerified", "Email has not been verified"));
 
                             Members.Logout();
                             return CurrentUmbracoPage();
@@ -73,14 +75,14 @@ namespace Forums
                     {
                         // can't find the user...?
                         ModelState.AddModelError(ForumAuthConstants.LoginKey, 
-                            GetDictionaryOrDefault("MemberAuth.Login.NoUser", "Invalid Details"));
+                            Umbraco.GetDictionaryValue("MemberAuth.Login.NoUser", "Invalid Details"));
                     }
                 }
                 else
                 {
                     // can't login this person...
                     ModelState.AddModelError(ForumAuthConstants.LoginKey, 
-                        GetDictionaryOrDefault("MemberAuth.Login.LoginFail","Invalid Details"));
+                        Umbraco.GetDictionaryValue("MemberAuth.Login.LoginFail","Invalid Details"));
                 }
 
             }
@@ -100,11 +102,11 @@ namespace Forums
             {
                 Members.Logout();
                 TempData["returnUrl"] = "/forums";
-                return Content( GetDictionaryOrDefault("MemberAuth.Logout.LoggedOut", "You have been logged out"));
+                return Content( Umbraco.GetDictionaryValue("MemberAuth.Logout.LoggedOut", "You have been logged out"));
             }
             else
             {
-                return Content( GetDictionaryOrDefault("MemberAuth.Logout.NotLoggedIn", "Wasn't logged in"));
+                return Content( Umbraco.GetDictionaryValue("MemberAuth.Logout.NotLoggedIn", "Wasn't logged in"));
             }
         }
 
@@ -148,7 +150,7 @@ namespace Forums
             else
             {
                 ModelState.AddModelError(ForumAuthConstants.ForgotPasswordKey, 
-                    GetDictionaryOrDefault("MemberAuth.Reset.NoUser", "No user found"));
+                    Umbraco.GetDictionaryValue("MemberAuth.Reset.NoUser", "No user found"));
                 return PartialView(Umbraco.GetDictionaryValue("ForumAuthConstants.ForgotPasswordView","Member/ForumAuth.ForgotPassword"));
             }
 
@@ -203,26 +205,26 @@ namespace Forums
                             else
                             {
                                 ModelState.AddModelError(ForumAuthConstants.ResetPasswordKey,
-                                    GetDictionaryOrDefault("MemberAuth.Reset.Expired", "The reset request has expired"));
+                                    Umbraco.GetDictionaryValue("MemberAuth.Reset.Expired", "The reset request has expired"));
                                 return CurrentUmbracoPage();
                             }
                         }
                         else
                         {
                             ModelState.AddModelError(ForumAuthConstants.ResetPasswordKey, 
-                                GetDictionaryOrDefault("MemberAuth.Reset.NoRequest", "No reset request has been found"));
+                                Umbraco.GetDictionaryValue("MemberAuth.Reset.NoRequest", "No reset request has been found"));
                         }
                     }
                     else
                     {
                         ModelState.AddModelError(ForumAuthConstants.ResetPasswordKey, 
-                            GetDictionaryOrDefault("MemberAuth.Reset.NoAccount", "Cannot find account"));
+                            Umbraco.GetDictionaryValue("MemberAuth.Reset.NoAccount", "Cannot find account"));
                     }
                 }
                 else
                 {
                     ModelState.AddModelError(ForumAuthConstants.ResetPasswordKey,
-                        GetDictionaryOrDefault("MemberAuth.Reset.NoAccount", "Cannot find account"));
+                        Umbraco.GetDictionaryValue("MemberAuth.Reset.NoAccount", "Cannot find account"));
                 }
             }
             catch (Exception ex)
@@ -254,14 +256,14 @@ namespace Forums
             if ( EmailAddressExists(model.EmailAddress ))
             {
                 ModelState.AddModelError(ForumAuthConstants.RegisterKey,
-                    GetDictionaryOrDefault("MemberAuth.Register.ExistingEmail", "Email Address is already in use"));
+                    Umbraco.GetDictionaryValue("MemberAuth.Register.ExistingEmail", "Email Address is already in use"));
                 return CurrentUmbracoPage();
             }
 
             if ( !IsValidEmailDomain(model.EmailAddress ))
             {
                 ModelState.AddModelError(ForumAuthConstants.RegisterKey, 
-                    GetDictionaryOrDefault("MemberAuth.Register.InvalidDomain", "You cannot register for this site with that email address"));
+                    Umbraco.GetDictionaryValue("MemberAuth.Register.InvalidDomain", "You cannot register for this site with that email address"));
                 return CurrentUmbracoPage();
             }
 
@@ -335,18 +337,18 @@ namespace Forums
                     member.SetValue(ForumAuthConstants.AccountVerifiedProperty, true);
                     memberService.Save(member);
                     TempData["returnUrl"] = "/login";
-                    return Content(GetDictionaryOrDefault("MemberAuth.Verfiy.Verified", "Account has been verified"));
+                    return Content(Umbraco.GetDictionaryValue("MemberAuth.Verfiy.Verified", "Account has been verified"));
                 }
                 else
                 {
                     return Content(
-                        GetDictionaryOrDefault("MemberAuth.Verfiy.NoMatch", "Can't find an account that matches"));
+                        Umbraco.GetDictionaryValue("MemberAuth.Verfiy.NoMatch", "Can't find an account that matches"));
                 }
             }
             else
             {
                 return Content(
-                    GetDictionaryOrDefault("MemberAuth.Verify.InvalidCode", "Not a valid account verification"));
+                    Umbraco.GetDictionaryValue("MemberAuth.Verify.InvalidCode", "Not a valid account verification"));
             }
         }
 
@@ -374,7 +376,7 @@ namespace Forums
         {
             if ( EmailAddressExists(emailAddress))
             {
-                return Json(GetDictionaryOrDefault("MemberAuth.Register.ExistingEmail", "Email Address is already in use"),JsonRequestBehavior.AllowGet);
+                return Json(Umbraco.GetDictionaryValue("MemberAuth.Register.ExistingEmail", "Email Address is already in use"),JsonRequestBehavior.AllowGet);
             }
             else
             {
@@ -387,26 +389,39 @@ namespace Forums
             var whitelist = CurrentPage.Value<string>("domainWhitelist").ToLower();
             var blacklist = CurrentPage.Value<string>("domainBlacklist").ToLower();
 
-            //Logger.Info<ForumAuthSurfaceController>("Domain WhiteList: {0}", whitelist);
-            //Logger.Info<ForumAuthSurfaceController>("Domain Blacklist: {0}", blacklist);
-
             if (emailAddress.Contains("@"))
             {
                 var domain = emailAddress.Substring(emailAddress.IndexOf("@", StringComparison.Ordinal)).ToLower();
-                //Logger.Info<ForumAuthSurfaceController>("Domain Check: {0}", domain);
 
-                if (!string.IsNullOrWhiteSpace(whitelist) && !whitelist.Contains(domain))
+                if (!string.IsNullOrWhiteSpace(whitelist) && whitelist.Split(new []{','},StringSplitOptions.RemoveEmptyEntries).Contains(domain))
                 {
-                        return false;
+                        return true;
                 }
 
-                if (!string.IsNullOrWhiteSpace(blacklist) && blacklist.Contains(domain))
+                if (!string.IsNullOrWhiteSpace(blacklist) && blacklist.Split(new []{','},StringSplitOptions.RemoveEmptyEntries).Contains(domain))
                 {
                     return false;
                 }
+
+                try
+                { //check if the domain exists or not
+                    var host = System.Net.Dns.GetHostEntry(domain);
+                    if (host.AddressList.Any())
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Info<ForumAuthSurfaceController>("Invalid domain: {0} - {1}", domain, ex.Message);
+                    if (ex.Message == "No such host is known")
+                    {
+                        return false;
+                    }
+                }
             }
 
-            return true;
+            return false;
         }
 
         public JsonResult CheckForValidEmail(string emailAddress)
@@ -417,17 +432,9 @@ namespace Forums
             }
             else
             {
-                return Json(GetDictionaryOrDefault("MemberAuth.Register.InvalidDomain", "You cannot register for this site with that email address"), JsonRequestBehavior.AllowGet);
+                return Json(Umbraco.GetDictionaryValue("MemberAuth.Register.InvalidDomain", "There was a problem with your email address"), JsonRequestBehavior.AllowGet);
             }
         }
 
-        private string GetDictionaryOrDefault(string key, string defaultValue)
-        {
-            var dictionaryValue = Umbraco.GetDictionaryValue(key);
-            if ( string.IsNullOrEmpty(dictionaryValue))
-                return defaultValue;
-
-            return dictionaryValue;
-        }
     }
 }

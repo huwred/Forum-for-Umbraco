@@ -1,10 +1,11 @@
-@inherits Umbraco.Web.Mvc.UmbracoViewPage< ContentModels.ForumPost>
+@inherits Umbraco.Web.Mvc.UmbracoViewPage<ContentModels.ForumPost>
 @using ContentModels = Umbraco.Web.PublishedModels;
 @using ClientDependency.Core.Mvc;
 @using Forums
 
 @{
-    var parent = Model.Parent<Forum>();
+    int parentId = Model.Parent.Id;
+    var parent = Umbraco.Content(parentId);
 
     if (!string.IsNullOrWhiteSpace(Request.QueryString["edit"]))
     {
@@ -18,11 +19,12 @@
 
     }
 
-    if (parent.IsDocumentType("forumPost"))
+    if (parent.IsDocumentType("ForumPost"))
     {
         // if this post has a parent post, that's the page we
         // want people to see (the full thread)
         Response.Redirect(parent.Url());
+        return;
     }
 }
 
@@ -38,7 +40,7 @@
             </select>
         </li>
         @{
-            var pageSize = Model.Value<int>("intPageSIze");
+            var pageSize = Model.IntPageSize;
             int.TryParse(Request.QueryString["page"], out var page);
             var items = Model.Children().Where(x => x.IsDocumentType("Forumpost") && !x.Value<bool>("postType"));
             var totalPages = (int)Math.Ceiling((double)items.Count() / (double)pageSize);
@@ -55,7 +57,7 @@
         @Html.Partial("_PagerView")
     }
     @* // if the forum and post are active, show the reply box.  *@
-    @if (DoesForumAcceptPosts(parent) && Model.Value<bool>("allowReplies"))
+    @if (DoesForumAcceptPosts(parent) && Model.AllowReplies)
     {
         @Html.Partial("Forums/RenderPostEditor", Model, new ViewDataDictionary(this.ViewData) { { "showTitle", false } })
     }
@@ -147,7 +149,7 @@
 
 @helper DisplayPostTools(ContentModels.ForumPost post)
 {
-    int authorId = post.PostAuthor != null ? post.PostAuthor.Id : -1;
+    int authorId = post.PostAuthor?.Id ?? -1;
     if ((Members.GetCurrentMemberId() == authorId && Members.IsLoggedIn()) || Members.GetCurrentUserRoles().Contains("ForumAdministrator") )
     {
     <ul class="post-tools">

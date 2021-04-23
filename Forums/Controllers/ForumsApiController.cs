@@ -21,7 +21,7 @@ namespace Forums
     }
 
     /// <summary>
-    /// Summary description for SimplyForumsApiController
+    /// Summary description for ForumsApiController
     /// </summary>
     public class ForumsApiController : UmbracoApiController
     {
@@ -371,7 +371,9 @@ namespace Forums
                 path = "/" + path;
             }
 
-            return new upload() {location = SaveFile(path,file)};;
+            var loc = SaveFile(path, file);
+
+            return new upload() {location = loc};
         }
 
         /// <summary>
@@ -414,9 +416,14 @@ namespace Forums
             var path = Path.Combine(fs.GetFullPath(""), fileName);
             file.SaveAs(path);
 
-            return Path.Combine(targetFolder, fileName).Replace('\\', '/');
+            return Combine(targetFolder, fileName);
         }
-
+        public static string Combine(string uri1, string uri2)
+        {
+            uri1 = uri1.TrimEnd('/');
+            uri2 = uri2.TrimStart('/');
+            return $"{uri1}/{uri2}";
+        }
         private bool CreateContentNode(string name, string contentType, IContent parent, string title, string body , string UrlAlias = "")
         {
             var content = Umbraco.Content(parent.Id); 
@@ -493,29 +500,39 @@ namespace Forums
                 if(!memberContentType.PropertyTypeExists("receiveNotifications"))
                 {
                     contentStatus.Append("Adding property receiveNotifications");
-                    memberContentType.AddPropertyType(new PropertyType(truefalse)
+
+                    saveMemberContent = memberContentType.AddPropertyType(new PropertyType(truefalse)
                     {
                         Name = "Receive Notifications",
                         Alias = "receiveNotifications",
                         Description = "Get an email when someone posts in a topic you are participating.",
                         Mandatory = false
                     }, groupname);
-                    saveMemberContent = true;
+                    if (saveMemberContent)
+                    {
+                        memberContentType.SetMemberCanEditProperty("receiveNotifications",true);
+                        memberContentType.SetMemberCanViewProperty("receiveNotifications",true);
+                    }
                     contentStatus.Append("<strong>done</strong>");
-                } 
+                }
+                else
+                {
+                    memberContentType.SetMemberCanEditProperty("receiveNotifications",true);
+                    memberContentType.SetMemberCanViewProperty("receiveNotifications",true);
+                }
                 contentStatus.Append("</li><li>");
                 
                 if(!memberContentType.PropertyTypeExists("hasVerifiedAccount"))
                 {
                     contentStatus.Append("Adding property hasVerifiedAccount");
-                    memberContentType.AddPropertyType(new PropertyType(truefalse)
+                    saveMemberContent = memberContentType.AddPropertyType(new PropertyType(truefalse)
                     {
                         Name = "Has verified Email",
                         Alias = "hasVerifiedAccount",
                         Description = "User has verified their account.",
                         Mandatory = false
                     }, groupname);
-                    saveMemberContent = true;
+
                     contentStatus.Append("<strong>done</strong>");
                 } 
                 contentStatus.Append("</li><li>");
@@ -523,14 +540,15 @@ namespace Forums
                 if(!memberContentType.PropertyTypeExists("resetGuid"))
                 {
                     contentStatus.Append("Adding property resetGuid");
-                    memberContentType.AddPropertyType(new PropertyType(textbox)
+                    saveMemberContent = memberContentType.AddPropertyType(new PropertyType(textbox)
                     {
                         Name = "Reset Guid",
                         Alias = "resetGuid",
                         Description = "Guid set when user requests a password reset.",
                         Mandatory = false
                     }, groupname);
-                    saveMemberContent = true;
+                    if(saveMemberContent)
+                        memberContentType.SetIsSensitiveProperty("resetGuid",true);
                     contentStatus.Append("<strong>done</strong>");
                 } 
                 contentStatus.Append("</li><li>");
@@ -538,19 +556,24 @@ namespace Forums
                 if(!memberContentType.PropertyTypeExists("joinedDate"))
                 {
                     contentStatus.Append("Adding property joinedDate");
-                    memberContentType.AddPropertyType(new PropertyType(textbox)
+                    saveMemberContent = memberContentType.AddPropertyType(new PropertyType(textbox)
                     {
                         Name = "Joined date",
                         Alias = "joinedDate",
                         Description = "Date the user joined (validated email).",
                         Mandatory = false
                     }, groupname);
-                    saveMemberContent = true;
+                    if(saveMemberContent)
+                        memberContentType.SetMemberCanViewProperty("joinedDate",true);
                     contentStatus.Append("<strong>done</strong>");
                 }
                 contentStatus.Append("</li>");
                 if(saveMemberContent)
                     _memberTypeService.Save(memberContentType); //save the content type
+                else
+                {
+                    throw new ArgumentException("Unable to add custom Member properties");
+                }
 
             }
             catch (Exception e)
